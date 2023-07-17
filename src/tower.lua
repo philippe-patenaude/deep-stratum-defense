@@ -1,6 +1,5 @@
-local Object = require 'lib.base-class'
+local Object = require 'src.lib.base-class'
 local Tower = Object:extend()
-local objectToString = require 'lib.object-to-string'
 local Bullet = require 'src.bullet'
 local Resources = require 'src.resources'
 local Monster = require 'src.monster'

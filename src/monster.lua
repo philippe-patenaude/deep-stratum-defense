@@ -1,4 +1,4 @@
-local Object = require 'lib.base-class'
+local Object = require 'src.lib.base-class'
 local Monster = Object:extend()
 local Resources = require 'src.resources'
 local V = require 'src.vectors'

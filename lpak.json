@@ -1,0 +1,16 @@
+{
+    "name": "deep-stratum-defense",
+    "id": "com.ppatenaude.deep-stratum-defense",
+    "love-version": "11.3",
+    "files": [
+        {"name": "main.lua"},
+        {"name": "conf.lua"},
+        {"name": "src"},
+        {"name": "resources"},
+        {"name": "LICENSE"},
+        {"name": "README.md"}
+    ],
+    "includes": [
+        
+    ]
+}

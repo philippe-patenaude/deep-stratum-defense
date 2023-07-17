@@ -1,4 +1,4 @@
-local Object = require 'lib.base-class'
+local Object = require 'src.lib.base-class'
 local Animation = Object:extend()
 
 function Animation.set(b, image, frames, options)

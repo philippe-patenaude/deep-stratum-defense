@@ -8,5 +8,5 @@ jobs:
       - name: Build and release
         uses: philippe-patenaude/lpak@v1.1.8
         with:
-          RELEASE_VERSION: 1.0.0
+          RELEASE_VERSION: 1.0.1
           GAME_NAME: deep-stratum-defense

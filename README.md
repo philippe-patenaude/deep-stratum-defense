@@ -5,6 +5,11 @@ You're an AI sentience collecting resources and fighting alien creatures in deep
 
 Welcome 9H3B. You're in charge of mining operations in sector Zeta. There are strong readings of precious ores in the caves below, but there are also readings of hazardous life forms. Build your mining bots using the resources you find and bring back the excess. Your success will allow us to expand throughout the galaxy.
 
+Change notes
+============
+
+1.0.1: Fixed license and readme packaging so it is accessible in the release package.
+
 Credits
 =======
 
@@ -50,3 +55,7 @@ https://opengameart.org/content/lpc-ore-and-forge
 Redshrike
 https://opengameart.org/content/lpc-beetle
 Changes: Removed background
+
+## LUA base class
+Joshua Grams <josh@qualdan.com>
+https://github.com/JoshuaGrams

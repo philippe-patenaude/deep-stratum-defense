@@ -6,11 +6,10 @@
         {"name": "main.lua"},
         {"name": "conf.lua"},
         {"name": "src"},
-        {"name": "resources"},
-        {"name": "LICENSE"},
-        {"name": "README.md"}
+        {"name": "resources"}
     ],
     "includes": [
-        
+        {"name": "LICENSE"},
+        {"name": "README.md"}
     ]
 }

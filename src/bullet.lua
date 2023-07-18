@@ -16,12 +16,9 @@ function Bullet.set(b, x, y, tx, ty, bulletSpeed, world)
     local n = V.norm({x=vx,y=vy})
     b.dx = bulletSpeed * n.x
     b.dy = bulletSpeed * n.y
-    -- gravity
-    b.ay = 0
 end
 
 function Bullet.update(b, dt)
-    b.dy = b.dy + b.ay
     b.x = b.x + (b.dx * dt)
     b.y = b.y + (b.dy * dt)
     b.life = b.life - dt
@@ -30,6 +27,7 @@ function Bullet.update(b, dt)
             and b.world.structureTileMap.tiles[bulletTile.y][bulletTile.x]
             and b.world.structureTileMap.tiles[bulletTile.y][bulletTile.x].type ~= nil) then
         b.destroyed = true
+        b.world:playSoundEffect(Resources.hitRockSound, b)
     end
 end
 
@@ -39,14 +37,10 @@ function Bullet.draw(b)
 end
 
 function Bullet.collide(b, other)
-    -- print("Bullet collision!")
     if (other:is(Monster) or other:is(Den)) and other.health > 0 and not b.destroyed then
-        -- other.health = other.health - 1
-        -- if other.health <= 0 then
-        --     other.destroyed = true
-        -- end
         other:hurt(1)
         b.destroyed = true
+        b.world:playSoundEffect(Resources.hitSound, b)
     end
 end
 

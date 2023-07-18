@@ -5,6 +5,7 @@ function Animation.set(b, image, frames, options)
     options = options or {}
     b.sx = options.sx or 1
     b.sy = options.sy or 1
+    b.frameDuration = options.frameDuration or 0.25
     if options.loop == nil then
         b.loop = true
     else
@@ -33,9 +34,9 @@ end
 function Animation.draw(b, x, y)
     local frameIndex = nil
     if b.loop then
-        frameIndex = math.floor(b.time*4)%#b.frames+1
+        frameIndex = math.floor(b.time/b.frameDuration)%#b.frames+1
     else
-        frameIndex = math.floor(b.time*4)+1
+        frameIndex = math.floor(b.time/b.frameDuration)+1
     end
     if frameIndex <= #b.frames then
         love.graphics.draw(b.image, b.frames[frameIndex], x, y, 0, b.sx, b.sy)

@@ -6,6 +6,7 @@ local TileMap = require 'src.tilemap'
 local Den = require 'src.den'
 local Tower = require 'src.tower'
 local V = require 'src.vectors'
+local AudioPlayer = require 'src.audio-player'
 
 local function randomWalkTunnelBuilder(tileMap, start)
     local cursor = {x=start.x, y=start.y}
@@ -38,15 +39,21 @@ local function randomWalkTunnelBuilder(tileMap, start)
 end
 
 function World.set(w)
+    w.cheatMode = false
+    w.drawShroud = true
+    w.oreSymbol = love.graphics.newQuad(3*32,8*32,32,32,Resources.ore)
     w:rebuild()
 end
 
 function World.rebuild(w)
 
+    w.screenShakeEffectStart = -100
+    w.nextMonsterWaveTime = math.random(60,120)
     w.money = 150
     w.items = {}
+    w.moneyLabels = {}
+    w.futureSpawns = {}
     w.time = 0
-    w.drawShroud = true
     w.updateShroud = true
     w.won = false
 
@@ -55,8 +62,6 @@ function World.rebuild(w)
     w.floorTileMap = TileMap(Resources.TILES_WIDE, Resources.TILES_HIGH, {
         stone={image=Resources.stoneImg},
         grass={image=Resources.grassImg}
-        -- stone={color={0.3,0.3,0.4}},
-        -- grass={color={0.4,0.6,0.2}}
     }, w)
     -- Default to stone floor but add patches of grass.
     for y = 1, w.floorTileMap.height do
@@ -68,29 +73,19 @@ function World.rebuild(w)
             end
         end
     end
-    -- Set a patch of grass.
-    -- for y = 3, 8 do
-    --     for x = 2, 11 do
-    --         w.floorTileMap.tiles[y][x].type = 'grass'
-    --     end
-    -- end
 
     -- Set up the tower tiles
 
     w.towerTileMap = TileMap(Resources.TILES_WIDE, Resources.TILES_HIGH, {
         basic={image=Resources.turretBase}
-        -- basic={color={0.6,0.3,0.6}}
     }, w)
 
     -- Setup structures
     
     w.structureTileMap = TileMap(Resources.TILES_WIDE, Resources.TILES_HIGH, {
-        -- rock={color={0.1,0.1,0.2}},
         rock={image=Resources.rockImg},
         ore={image=Resources.ore,quad=love.graphics.newQuad(3*32,0,32,32,Resources.ore)},
         depleted_ore={image=Resources.ore,quad=love.graphics.newQuad(6*32,32,32,32,Resources.ore)},
-        -- ore={color={0.2,0.8,0.7}},
-        -- depleted_ore={color={0.1,0.4,0.35}},
     }, w)
     -- Fill with rocks.
     for y = 1, Resources.TILES_HIGH do
@@ -117,8 +112,8 @@ function World.rebuild(w)
     w:placeTower(startLocation, true)
 
     -- Center the camera on the center of the map.
-    Resources.camera.x = startLocation.x*32-love.graphics.getWidth()/2
-    Resources.camera.y = startLocation.y*32-love.graphics.getHeight()/2
+    Resources.camera.cx = startLocation.x*32-love.graphics.getWidth()/2
+    Resources.camera.cy = startLocation.y*32-love.graphics.getHeight()/2
 
     -- Add ore randomly in the rock walls.
     for y = 1, Resources.TILES_HIGH do
@@ -140,6 +135,29 @@ function World.rebuild(w)
             w.shroudTileMap.tiles[y][x].type = 'shroud'
         end
     end
+
+    -- Spawn some spider aliens.
+
+    for y = 1, Resources.TILES_HIGH do
+        for x = 1, Resources.TILES_WIDE do
+            local thisTile = {x=x, y=y}
+            if V.dist(thisTile, startLocation) > 10 then
+                if w.structureTileMap.tiles[y][x].type == nil and math.random() < 0.01 then
+                    local mPosition = V.add(w.tileToPosition(thisTile), 16)
+                    local m = Monster(
+                        mPosition.x,
+                        mPosition.y,
+                        25, -- Set monster speed
+                        28, -- Monster image index
+                        3, -- Monster health
+                        w
+                    )
+                    w:addItem(m)
+                end
+            end
+        end
+    end
+
 
 end
 
@@ -220,7 +238,7 @@ function World.doUpdateShroud(w)
             for y = yStart, yEnd do
                 for x = xStart, xEnd do
                     local tile = {x=x, y=y}
-                    if V.dist(v, V.add(w.tileToPosition(tile), {x=16,y=16})) < v.lineOfSight*32 then
+                    if V.dist(V.add(v, {x=v.w/2,y=v.h/2}), V.add(w.tileToPosition(tile), 16)) <= v.lineOfSight*32 then
                         local towerPosition = w.positionToTile(v)
                         local count, isTargetObstacle = w:isSightClear(w.structureTileMap, towerPosition, tile)
                         if count == 0 or (count == 1 and isTargetObstacle == true) then
@@ -249,6 +267,7 @@ function World.placeTower(world, tilePosition, forcePlace)
                 tile.tower = Tower(world, (tilePosition.x-0.5)*world.towerTileMap.TILE_WIDTH, (tilePosition.y-0.5)*world.towerTileMap.TILE_HEIGHT)
                 world:addItem(tile.tower)
                 world.updateShroud = true
+                world:playSoundEffect(Resources.placeTowerSound, tile.tower)
             end
         end
     end
@@ -270,6 +289,20 @@ function World.addItem(w, item)
     w.items[#w.items + 1] = item
 end
 
+function World.playSoundEffect(w, source, location)
+    -- The volume is based on the distance from the middle of the screen.
+    local screenCenter = V.add(Resources.camera, {x=love.graphics.getWidth()/2, y=love.graphics.getHeight()/2})
+    local normalizedDist = V.dist(location, screenCenter)/1000
+
+    -- Don't play the audio if it is out of range.
+    if normalizedDist <= 1 then
+        local options = {
+            volume = 1-normalizedDist
+        }
+        AudioPlayer:play(source, options)
+    end
+end
+
 function World.draw(w)
 
     love.graphics.translate(-Resources.camera.x, -Resources.camera.y)
@@ -283,16 +316,43 @@ function World.draw(w)
 
     w.structureTileMap:draw()
     
-    if w.drawShroud then
+    if (w.cheatMode and w.drawShroud) or (not w.cheatMode) then
         w.shroudTileMap:draw()
+    end
+    
+    for _, v in ipairs(w.moneyLabels) do
+        local cycleTime = (w.time-v.time)/v.duration
+        if cycleTime <= 1 then
+            love.graphics.setColor(0,0,0,1-cycleTime)
+            love.graphics.rectangle('fill', v.source.x + v.source.w/2 - 2, v.source.y + v.source.h/2 - 32 - cycleTime * 50 - 2, 11, 20)
+            local color = {0.8, 0.8, 0, 1-cycleTime}
+            love.graphics.setColor(color)
+            love.graphics.print(tostring(v.value), v.source.x + v.source.w/2, v.source.y + v.source.h/2 - 32 - cycleTime * 50)
+        end
     end
 
     love.graphics.origin()
+    local oldFont = love.graphics.getFont()
+    love.graphics.setFont(Resources.mediumFont)
     love.graphics.setColor(1,1,1)
-    love.graphics.print("$" .. tostring(w.money), 10, 10)
+    love.graphics.draw(Resources.ore, w.oreSymbol, 10, 10)
+    love.graphics.print(tostring(w.money) .. "/500", 42, 10)
     if w.won then
-        love.graphics.print("You win! Press 'n' to go to the next level.", 50, 10)
+        love.graphics.setColor(0,0,0,0.5)
+        love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+        love.graphics.setColor(1,1,1)
+        love.graphics.setFont(Resources.largeFont)
+        love.graphics.printf("Quota met!", 0, 100, love.graphics.getWidth(), 'center')
+        love.graphics.setFont(Resources.mediumFont)
+        love.graphics.printf("Press 'n' to dig deeper.", 0, 200, love.graphics.getWidth(), 'center')
     end
+
+    if w.cheatMode then
+        love.graphics.setFont(Resources.smallFont)
+        love.graphics.printf("Cheat mode is on.\nPress '`' (back tick) to turn off.\nPress 's' to turn the shroud on and off.\nTurrets no longer have a cost and can be placed in the shroud.", 10, 50, 200)
+    end
+
+    love.graphics.setFont(oldFont)
 
 end
 
@@ -305,11 +365,19 @@ end
 
 function World.update(w, dt)
 
+    Resources.camera.x = Resources.camera.cx
+    Resources.camera.y = Resources.camera.cy
+
     if w.won then
         return
     end
 
     w.time = w.time + dt
+
+    if w.time - w.screenShakeEffectStart <= 3 then
+        Resources.camera.x = Resources.camera.cx + math.random(-3,3)
+        Resources.camera.y = Resources.camera.cy + math.random(-3,3)
+    end
 
     for i, v in ipairs(w.items) do
         v:update(dt)
@@ -335,6 +403,66 @@ function World.update(w, dt)
     if w.updateShroud then
         w.updateShroud = false
         w:doUpdateShroud()
+    end
+    
+    for i = #w.moneyLabels, 1, -1 do
+        local v = w.moneyLabels[i]
+        if w.time-v.time > v.duration then
+            table.remove(w.moneyLabels, i)
+        end
+    end
+
+    if w.nextMonsterWaveTime <= w.time then
+        w.nextMonsterWaveTime = w.time + math.random(60, 120)
+        AudioPlayer:play(Resources.monsterWaveStartSound)
+        w.screenShakeEffectStart = w.time
+        -- Only spawn monsters on empty tiles that
+        -- are under the shroud.
+        for y = 1, Resources.TILES_HIGH do
+            for x = 1, Resources.TILES_WIDE do
+                local thisTile = {x=x, y=y}
+                if w.structureTileMap.tiles[y][x].type == nil and w.shroudTileMap.tiles[y][x].type ~= nil then
+                    -- One percent spawn chance.
+                    if math.random() <= 0.01 then
+                        local mPosition = V.add(w.tileToPosition(thisTile), 16)
+                        -- Two thirds will be spiders. One third will be bugs.
+                        if math.random() <= 2/3 then
+                            table.insert(w.futureSpawns, {
+                                time = w.time + math.random()*4,
+                                object = Monster(
+                                    mPosition.x,
+                                    mPosition.y,
+                                    25, -- Set monster speed
+                                    28, -- Monster image index
+                                    3, -- Monster health
+                                    w
+                                )
+                            })
+                        else
+                            table.insert(w.futureSpawns, {
+                                time = w.time + math.random()*4,
+                                object = Monster(
+                                    mPosition.x,
+                                    mPosition.y,
+                                    50, -- Set monster speed
+                                    5, -- Monster image index
+                                    2, -- Monster health
+                                    w
+                                )
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    for i = #w.futureSpawns, 1, -1 do
+        local s = w.futureSpawns[i]
+        if s.time < w.time then
+            table.insert(w.items, s.object)
+            table.remove(w.futureSpawns, i)
+        end
     end
 
     -- Win if the player gets $500 of excess cash.

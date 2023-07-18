@@ -19,9 +19,12 @@ function Tower.set(p, world, x, y)
     -- Set to world time when firing.
     p.fireStart = 0
     p.mineTime = 0
+    -- p.health = 10
     p.health = 1
     p.turretQuad = love.graphics.newQuad(0, 0, 22, 26, Resources.weapons)
     p.facing = {x=math.random()-0.5,y=math.random()-0.5}
+    -- p.fireDelaySeconds = 0.25
+    p.fireDelaySeconds = 3
 end
 
 function Tower.getOres(p)
@@ -48,7 +51,7 @@ function Tower.update(p, dt)
 
     if p.destroyedAnimation then
         p.destroyedAnimation:update(dt)
-        if p.world.time - p.destroyedTime >= 3 then
+        if p.world.time - p.destroyedTime >= 1 then
             p.destroyed = true
         end
     end
@@ -77,8 +80,9 @@ function Tower.update(p, dt)
         p.facing = V.subtract(target, p)
     end
 
-    if target and p.world.time - p.fireStart > 3 then
+    if target and p.world.time - p.fireStart > p.fireDelaySeconds then
         p.fireStart = p.world.time
+        p.world:playSoundEffect(Resources.shotSound, p)
         local direction = V.norm(p.facing)
         p.world:addItem(Bullet(p.x+p.w/2 + direction.x*18, p.y+p.h/2 + direction.y*18, target.x+target.w/2, target.y+target.h/2, 200, p.world))
     end
@@ -87,14 +91,20 @@ function Tower.update(p, dt)
     if p.world.time - p.mineTime > 1 then
         p.mineTime = p.world.time
         local oreList = p:getOres()
+        local totalOre = 0
         for _, tile in ipairs(oreList) do
             if tile.value >= 1 then
                 tile.value = tile.value - 1
                 p.world.money = p.world.money + 1
+                totalOre = totalOre + 1
             else
                 -- Turn the ore into depleted ore
                 tile.type = 'depleted_ore'
             end
+        end
+        if totalOre > 0 then
+            table.insert(p.world.moneyLabels, {time = p.world.time, value = totalOre, duration = 3, source = p})
+            p.world:playSoundEffect(Resources.moneySound, p)
         end
     end
 
@@ -107,25 +117,17 @@ function Tower.hurt(p, damage)
     p.health = p.health - damage
     if p.health <= 0 then
         p.destroyedTime = p.world.time
-        local frames = {}
-        for i = 1, 12 do
-            table.insert(frames, {
-                x = (i-1)*96,
-                y = 0,
-                w = 96,
-                h = 96
-            })
-        end
-        p.destroyedAnimation = Animation(Resources.explosionImg, frames, {
-            sx = 1/3, sy = 1/3, loop = false
+        p.destroyedAnimation = Animation(Resources.explosionImg, Resources.explosionFrames, {
+            sx = 1/3, sy = 1/3, loop = false, frameDuration = 1/12
         })
+        p.world:playSoundEffect(Resources.explosionSound, p)
     end
 
 end
 
 function Tower.draw(p)
     
-    if p.health > 0 or (p.health <= 0 and p.world.time - p.destroyedTime <= 1) then
+    if p.health > 0 or (p.health <= 0 and p.world.time - p.destroyedTime <= 1/3) then
         love.graphics.setColor(1, 1, 1)
         -- love.graphics.rectangle('fill', p.x, p.y, p.w, p.h)
         love.graphics.draw(Resources.weapons, p.turretQuad, p.x + p.w/2, p.y + p.h/2, math.atan2(p.facing.y, p.facing.x) + math.pi/2, 1, 1, 11, 18)
@@ -135,7 +137,7 @@ function Tower.draw(p)
     end
 
     if p.health > 0 then
-        love.graphics.setColor(0.8, 0.8, 0)
+        love.graphics.setColor({0.8, 0.8, 0})
         local oreList = p:getOres()
         for _, tile in ipairs(oreList) do
             local tilePosition = V.add(p.world.tileToPosition(tile), {x=16, y=16})

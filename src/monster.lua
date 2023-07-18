@@ -5,7 +5,7 @@ local V = require 'src.vectors'
 local dijkstra = require 'src.dijkstra'
 local Animation = require 'src.animation'
 
-function Monster.set(b, x, y, monsterSpeed, world)
+function Monster.set(b, x, y, monsterSpeed, monsterImageIndex, monsterHealth, world)
     b.world = world
     b.w, b.h = 16, 16
     b.x, b.y = x-b.w/2, y-b.h/2
@@ -18,7 +18,8 @@ function Monster.set(b, x, y, monsterSpeed, world)
     b.color = {math.random()*0.5+0.5, 0, 0}
     -- b.health = 20
     -- b.health = 1
-    b.health = 2
+    -- b.health = 2
+    b.health = monsterHealth
     b.target = nil
     b.pathCalcTime = 0
     b.pathCalcDelay = math.random()*3+1
@@ -30,7 +31,8 @@ function Monster.set(b, x, y, monsterSpeed, world)
     -- Spiders
     -- local yPixel = 28*32
     -- Bugs
-    local yPixel = 5*32
+    -- local yPixel = 5*32
+    local yPixel = monsterImageIndex*32
     b.animation = Animation(Resources.creatureImg, {
         {x=0, y=yPixel, w=32, h=32},
         {x=32, y=yPixel, w=32, h=32},
@@ -166,7 +168,7 @@ function Monster.hurt(b, damage)
     b.health = b.health - damage
     if b.health <= 0 then
         b.deathTime = b.world.time
-        -- b.destroyed = true
+        b.world:playSoundEffect(Resources.bugSound, b)
     end
 end
 
@@ -188,7 +190,8 @@ function Monster.collide(b, other, dt)
     if b.health <= 0 then return end
 
     local Tower = require 'src.tower'
-    if other:is(Tower) and b.world.time-b.lastAttack > 1 then
+    if other:is(Tower) and b.world.time-b.lastAttack > 1 and other.health > 0 then
+        b.world:playSoundEffect(Resources.swishSounds[math.random(#Resources.swishSounds)], b)
         b.lastAttack = b.world.time
         other:hurt(1)
     elseif other:is(Monster) and other.health > 0 then

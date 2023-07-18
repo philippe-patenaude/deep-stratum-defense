@@ -5,6 +5,20 @@ You're an AI sentience collecting resources and fighting alien creatures in deep
 
 Welcome 9H3B. You're in charge of mining operations in sector Zeta. There are strong readings of precious ores in the caves below, but there are also readings of hazardous life forms. Build your mining bots using the resources you find and bring back the excess. Your success will allow us to expand throughout the galaxy.
 
+Instructions
+============
+Left click in open areas to place a tower (it takes 25 ore).
+Place towers directly next to ore deposits to collect (top, bottom, left, or right; no diagonals).
+Each ore deposit contains 100 ore.
+Towers can only be placed in areas that have been seen.
+Arrow keys to move the camera.
+Collect 500 excess ore to win the level.
+When a tower is destroyed, it leaves a foundation behind; those foundations can't be built over or removed (the tile is lost for construction).
+
+The game does not currently have any progression, but the levels are procedurally generated (the first level will be the same every time, but subsequent levels will be different on each play through).
+
+The tilde key (or back tick key) can be used to turn on cheat mode. Further instructions are provided in game.
+
 Change notes
 ============
 
@@ -133,3 +147,5 @@ License: http://creativecommons.org/licenses/by-sa/3.0/
 VividReality
 https://opengameart.org/content/monster-sound-tutorial
 License: http://creativecommons.org/licenses/by/3.0/
+
+Changes: Cropped one of the sounds from the collection.

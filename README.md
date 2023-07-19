@@ -1,9 +1,11 @@
 Deep Stratum Defense
 ====================
 
-You're an AI sentience collecting resources and fighting alien creatures in deep caves in this rogue-like tower defense.
+You're an AI who's mission is to explore deep caves, collect valuable resources, and combat hostile alien creatures in this rogue-like tower defense.
 
-Welcome 9H3B. You're in charge of mining operations in sector Zeta. There are strong readings of precious ores in the caves below, but there are also readings of hazardous life forms. Build your mining bots using the resources you find and bring back the excess. Your success will allow us to expand throughout the galaxy.
+Welcome, 9H3B. As the overseer of mining operations in sector Zeta, your primary objective is to extract precious ores that lie hidden within the depths. However, be prepared to face formidable resistance from hazardous life forms lurking in the darkness. Your strategic prowess will be put to the test as you deploy mining bots, utilizing the resources you gather to strengthen your defenses.
+
+Success in your mission holds the key to expanding our galactic presence. With each triumph, we can establish a stronger foothold in the vast reaches of the cosmos. The fate of our expansion rests in your hands, 9H3B!
 
 Instructions
 ============
@@ -149,3 +151,6 @@ https://opengameart.org/content/monster-sound-tutorial
 License: http://creativecommons.org/licenses/by/3.0/
 
 Changes: Cropped one of the sounds from the collection.
+
+## Idea generation and text revision
+I used ChatGPT to generate ideas and to revise some of the text for the game.

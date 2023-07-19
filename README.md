@@ -1,7 +1,11 @@
 Deep Stratum Defense
 ====================
 
-You're an AI who's mission is to explore deep caves, collect valuable resources, and combat hostile alien creatures in this rogue-like tower defense.
+## Short description
+You're an AI whose mission is to explore caves, collect resources, and combat aliens in this rogue-like tower defense.
+
+## Long description
+You're an AI whose mission is to explore deep caves, collect valuable resources, and combat hostile alien creatures in this rogue-like tower defense.
 
 Welcome, 9H3B. As the overseer of mining operations in sector Zeta, your primary objective is to extract precious ores that lie hidden within the depths. However, be prepared to face formidable resistance from hazardous life forms lurking in the darkness. Your strategic prowess will be put to the test as you deploy mining bots, utilizing the resources you gather to strengthen your defenses.
 

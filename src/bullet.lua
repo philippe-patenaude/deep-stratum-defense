@@ -5,12 +5,13 @@ local Monster = require 'src.monster'
 local Den = require 'src.den'
 local V = require 'src.vectors'
 
-function Bullet.set(b, x, y, tx, ty, bulletSpeed, world)
+function Bullet.set(b, x, y, tx, ty, bulletSpeed, damage, world)
     b.w, b.h = 4, 4
     b.x, b.y = x-b.w/2, y-b.h/2
     b.life = 1.5
     b.angle = angle
     b.destroyed = false
+    b.damage = damage
     b.world = world
     local vx, vy = tx-x, ty-y
     local n = V.norm({x=vx,y=vy})
@@ -38,7 +39,7 @@ end
 
 function Bullet.collide(b, other)
     if (other:is(Monster) or other:is(Den)) and other.health > 0 and not b.destroyed then
-        other:hurt(1)
+        other:hurt(b.damage)
         b.destroyed = true
         b.world:playSoundEffect(Resources.hitSound, b)
     end

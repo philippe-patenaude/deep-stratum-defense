@@ -47,6 +47,8 @@ end
 
 function World.rebuild(w)
 
+    w.goalIncome = 10000
+    w.selectedTile = nil
     w.screenShakeEffectStart = -100
     w.nextMonsterWaveTime = math.random(60,120)
     w.money = 150
@@ -109,7 +111,10 @@ function World.rebuild(w)
         w))
 
     -- Place the starting tower in the center of the map.
-    w:placeTower(startLocation, true)
+    local tower = w:placeTower(startLocation, true)
+    tower.damageUpgrade = 1
+    tower.rangeUpgrade = 1
+    tower.rateOfFireUpgrade = 1
 
     -- Center the camera on the center of the map.
     Resources.camera.cx = startLocation.x*32-love.graphics.getWidth()/2
@@ -121,7 +126,7 @@ function World.rebuild(w)
             if w.structureTileMap.tiles[y][x].type == 'rock' and math.random() < 0.1 then
                 w.structureTileMap.tiles[y][x].type = 'ore'
                 -- Each ore will provide a certain amount of resources.
-                w.structureTileMap.tiles[y][x].value = 100
+                w.structureTileMap.tiles[y][x].value = 300
             end
         end
     end
@@ -229,8 +234,9 @@ function World.doUpdateShroud(w)
     end
     for _, v in ipairs(w.items) do
         if v:is(Tower) then
-            local startTile = w.positionToTile({x=v.x+v.w/2-v.lineOfSight*32, y=v.y+v.h/2-v.lineOfSight*32})
-            local endTile = w.positionToTile({x=v.x+v.w/2+v.lineOfSight*32, y=v.y+v.h/2+v.lineOfSight*32})
+            local lineOfSight = v:getRange()
+            local startTile = w.positionToTile({x=v.x+v.w/2-lineOfSight*32, y=v.y+v.h/2-lineOfSight*32})
+            local endTile = w.positionToTile({x=v.x+v.w/2+lineOfSight*32, y=v.y+v.h/2+lineOfSight*32})
             local xStart = math.max(1,startTile.x)
             local yStart = math.max(1,startTile.y)
             local xEnd = math.min(Resources.TILES_WIDE, endTile.x)
@@ -238,7 +244,7 @@ function World.doUpdateShroud(w)
             for y = yStart, yEnd do
                 for x = xStart, xEnd do
                     local tile = {x=x, y=y}
-                    if V.dist(V.add(v, {x=v.w/2,y=v.h/2}), V.add(w.tileToPosition(tile), 16)) <= v.lineOfSight*32 then
+                    if V.dist(V.add(v, {x=v.w/2,y=v.h/2}), V.add(w.tileToPosition(tile), 16)) <= lineOfSight*32 then
                         local towerPosition = w.positionToTile(v)
                         local count, isTargetObstacle = w:isSightClear(w.structureTileMap, towerPosition, tile)
                         if count == 0 or (count == 1 and isTargetObstacle == true) then
@@ -251,25 +257,81 @@ function World.doUpdateShroud(w)
     end
 end
 
-function World.placeTower(world, tilePosition, forcePlace)
-    if tilePosition.x >= 1 and tilePosition.x <= world.towerTileMap.width and
-            tilePosition.y >= 1 and tilePosition.y <= world.towerTileMap.height and
-            world.structureTileMap.tiles[tilePosition.y][tilePosition.x].type == nil and
+function World.isTileInMap(world, tilePosition)
+    return tilePosition.x >= 1 and tilePosition.x <= world.towerTileMap.width and
+        tilePosition.y >= 1 and tilePosition.y <= world.towerTileMap.height
+end
+
+function World.canDestroyTower(world, tilePosition)
+    if world:isTileInMap(tilePosition) and world.structureTileMap.tiles[tilePosition.y][tilePosition.x].type == nil and
+            (forcePlace or world.shroudTileMap.tiles[tilePosition.y][tilePosition.x].type == nil) and
+            world.towerTileMap.tiles[tilePosition.y][tilePosition.x].type ~= nil then
+        return true
+    end
+    return false
+end
+
+function World.destroyTower(world, tilePosition, forceDestroy)
+    if world:canDestroyTower(tilePosition) then
+        if not forceDestroy then
+            local costDiff = 0
+            local tower = world.towerTileMap:get(tilePosition).tower
+            if tower.health > 0 then
+                costDiff = world:getSellCost(tower)
+            -- elseif world.money > 10 then
+            --     costDiff = -10
+            -- else
+            --     -- Don't have enough money to destroy destroy the tower.
+            --     return
+            end
+            world.money = world.money + costDiff
+        end
+        local tile = world.towerTileMap.tiles[tilePosition.y][tilePosition.x]
+        if tile.type ~= nil then
+            tile.tower.destroyed = true
+            tile.tower.health = 0
+            world.updateShroud = true
+            tile.type = nil
+            world:playSoundEffect(Resources.placeTowerSound, tile.tower)
+            tile.tower = nil
+        end
+    end
+end
+
+function World.canPlaceTower(world, tilePosition, forcePlace)
+    if world:isTileInMap(tilePosition) and world.structureTileMap.tiles[tilePosition.y][tilePosition.x].type == nil and
             (forcePlace or world.shroudTileMap.tiles[tilePosition.y][tilePosition.x].type == nil) and
             world.towerTileMap.tiles[tilePosition.y][tilePosition.x].type == nil then
         if forcePlace or world.money >= 25 then
-            if not forcePlace then
-                world.money = world.money - 25
-            end
-            local tile = world.towerTileMap.tiles[tilePosition.y][tilePosition.x]
-            if tile.type == nil then
-                tile.type = 'basic'
-                tile.tower = Tower(world, (tilePosition.x-0.5)*world.towerTileMap.TILE_WIDTH, (tilePosition.y-0.5)*world.towerTileMap.TILE_HEIGHT)
-                world:addItem(tile.tower)
-                world.updateShroud = true
-                world:playSoundEffect(Resources.placeTowerSound, tile.tower)
-            end
+            return true
         end
+    end
+    return false
+end
+
+function World.placeTower(world, tilePosition, forcePlace)
+    if world:canPlaceTower(tilePosition, forcePlace) then
+        if not forcePlace then
+            world.money = world.money - 25
+        end
+        local tile = world.towerTileMap.tiles[tilePosition.y][tilePosition.x]
+        if tile.type == nil then
+            tile.type = 'basic'
+            tile.tower = Tower(world, (tilePosition.x-0.5)*world.towerTileMap.TILE_WIDTH, (tilePosition.y-0.5)*world.towerTileMap.TILE_HEIGHT)
+            world:addItem(tile.tower)
+            world.updateShroud = true
+            world:playSoundEffect(Resources.placeTowerSound, tile.tower)
+            return tile.tower
+        end
+    end
+    return nil
+end
+
+function World.selectTower(world, tilePosition)
+    if world:isTileInMap(tilePosition) and world.towerTileMap:get(tilePosition).type ~= nil then
+        world.selectedTile = tilePosition
+    else
+        world.selectedTile = nil
     end
 end
 
@@ -287,6 +349,14 @@ end
 
 function World.addItem(w, item)
     w.items[#w.items + 1] = item
+end
+
+function World.getSellCost(w, tower)
+    if tower == nil or tower.health <= 0 then
+        return 0
+    else
+        return 25 + (tower.damageUpgrade+tower.rangeUpgrade+tower.rateOfFireUpgrade)*25
+    end
 end
 
 function World.playSoundEffect(w, source, location)
@@ -315,6 +385,30 @@ function World.draw(w)
     end
 
     w.structureTileMap:draw()
+
+    local x, y = love.mouse.getPosition()
+    local tileMousePosition = w.positionToTile(w.screenToPosition({x=x, y=y}))
+
+    if w:isTileInMap(tileMousePosition) then
+        if w.towerTileMap:get(tileMousePosition).type ~= nil then
+            love.graphics.setColor(0,0,1,0.5)
+            local oldLineWidth = love.graphics.getLineWidth()
+            love.graphics.setLineWidth(3)
+            love.graphics.rectangle('line', (tileMousePosition.x-1)*32, (tileMousePosition.y-1)*32, 32, 32)
+            love.graphics.setLineWidth(oldLineWidth)
+        elseif w:canPlaceTower(tileMousePosition, w.cheatMode) then
+            love.graphics.setColor(0,1,0,0.5)
+            love.graphics.rectangle('fill', (tileMousePosition.x-1)*32, (tileMousePosition.y-1)*32, 32, 32)
+        else
+            love.graphics.setColor(1,0,0,0.5)
+            love.graphics.rectangle('fill', (tileMousePosition.x-1)*32, (tileMousePosition.y-1)*32, 32, 32)
+        end
+    end
+    
+    if w.selectedTile then
+        love.graphics.setColor(0,0,1,0.5)
+        love.graphics.rectangle('fill', (w.selectedTile.x-1)*32, (w.selectedTile.y-1)*32, 32, 32)
+    end
     
     if (w.cheatMode and w.drawShroud) or (not w.cheatMode) then
         w.shroudTileMap:draw()
@@ -336,7 +430,26 @@ function World.draw(w)
     love.graphics.setFont(Resources.mediumFont)
     love.graphics.setColor(1,1,1)
     love.graphics.draw(Resources.ore, w.oreSymbol, 10, 10)
-    love.graphics.print(tostring(w.money) .. "/500", 42, 10)
+    love.graphics.print(tostring(w.money) .. "/" .. tostring(w.goalIncome), 42, 10)
+
+    if w.selectedTile then
+        local tileObj = w.towerTileMap:get(w.selectedTile)
+        if tileObj.type ~= nil then
+            love.graphics.setColor(0,0,0,0.5)
+            love.graphics.rectangle('fill', love.graphics.getWidth()-300, 0, 300, love.graphics.getHeight())
+            love.graphics.setColor(0.8, 0.8, 0)
+            love.graphics.setLineWidth(3)
+            love.graphics.line(love.graphics.getWidth()-300, 0, love.graphics.getWidth()-300, love.graphics.getHeight())
+            love.graphics.setFont(Resources.smallFont)
+            love.graphics.setColor(1,1,1)
+            if tileObj.tower.health > 0 then
+                love.graphics.printf("Upgrades\n\nDamage (1): 1->3\nRange (2): 6->9\nDelay between shots (3): 3->1.5\n\nSell (x): +$" .. w:getSellCost(tileObj.tower), love.graphics.getWidth()-300 + 10, 0 + 10, 280)
+            else
+                love.graphics.printf("Clear (x): No cost", love.graphics.getWidth()-300 + 10, 0 + 10, 280)
+            end
+        end
+    end
+
     if w.won then
         love.graphics.setColor(0,0,0,0.5)
         love.graphics.rectangle('fill', 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
@@ -348,6 +461,7 @@ function World.draw(w)
     end
 
     if w.cheatMode then
+        love.graphics.setColor(1,1,1)
         love.graphics.setFont(Resources.smallFont)
         love.graphics.printf("Cheat mode is on.\nPress '`' (back tick) to turn off.\nPress 's' to turn the shroud on and off.\nTurrets no longer have a cost and can be placed in the shroud.", 10, 50, 200)
     end
@@ -465,8 +579,8 @@ function World.update(w, dt)
         end
     end
 
-    -- Win if the player gets $500 of excess cash.
-    if w.money >= 500 then
+    -- Win if the player gets enough excess cash.
+    if w.money >= w.goalIncome then
         w.won = true
     end
 

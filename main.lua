@@ -9,9 +9,9 @@ local CAMERA_SPEED = 300
 local right, left, up, down = 0, 0, 0, 0
 local world = nil
 
--- local animation = nil
-
 function love.load()
+
+    math.randomseed(os.time())
 
     Resources.creatureImg = love.graphics.newImage("resources/creatures edit_0.png")
     Resources.explosionImg = love.graphics.newImage("resources/Explosion.png")
@@ -53,18 +53,6 @@ function love.load()
         table.insert(Resources.swishSounds, love.audio.newSource("resources/swish-" .. tostring(i) .. ".wav", "static"))
     end
 
-    -- local frames = {}
-    -- for i = 1, 12 do
-    --     table.insert(frames, {
-    --         x = (i-1)*96,
-    --         y = 0,
-    --         w = 96,
-    --         h = 96
-    --     })
-    -- end
-    -- animation = Animation(Resources.explosionImg, frames, {
-    --     sx = 1/3, sy = 1/3
-    -- })
     world = World()
     AudioPlayer:play(Resources.music, {
         loop = true,
@@ -76,7 +64,6 @@ end
 function love.update(dt)
     gameTime = gameTime + dt
     world:update(dt)
-    -- animation:update(dt)
     
     Resources.camera.cx = Resources.camera.cx + (right-left)*dt*CAMERA_SPEED
     Resources.camera.cy = Resources.camera.cy + (down-up)*dt*CAMERA_SPEED
@@ -84,7 +71,6 @@ end
 
 function love.draw()
     world:draw()
-    -- animation:draw(50, 50)
 end
 
 function love.keypressed(k, s)
@@ -101,6 +87,42 @@ function love.keypressed(k, s)
     end
     if s == 'down' then
         down = 1
+    end
+
+    if s == 'escape' then
+        world.selectedTile = nil
+    end
+
+    local upgradeCost = 25
+    local numberOfUpgrades = 1
+    if world.selectedTile then
+        local tile = world.towerTileMap:get(world.selectedTile)
+        local tower = tile.tower
+        if tower then
+            if tower.health > 0 and world.money >= upgradeCost then
+                if s == '1' then
+                    if tower.damageUpgrade < numberOfUpgrades then
+                        tower.damageUpgrade = tower.damageUpgrade + 1
+                        world.money = world.money - upgradeCost
+                    end
+                elseif s == '2' then
+                    if tower.rangeUpgrade < numberOfUpgrades then
+                        tower.rangeUpgrade = tower.rangeUpgrade + 1
+                        world.money = world.money - upgradeCost
+                        world.updateShroud = true
+                    end
+                elseif s == '3' then
+                    if tower.rateOfFireUpgrade < numberOfUpgrades then
+                        tower.rateOfFireUpgrade = tower.rateOfFireUpgrade + 1
+                        world.money = world.money - upgradeCost
+                    end
+                end
+            end
+            if s == 'x' then
+                world:destroyTower(tile, world.cheatMode)
+                world.selectedTile = nil
+            end
+        end
     end
 
     if s == '`' then
@@ -138,11 +160,11 @@ end
 function love.mousepressed(x, y, button)
     if button == 1 and world.won == false then
         local position = world.screenToPosition({x=x,y=y})
-        local xTile, yTile = math.floor(position.x/world.towerTileMap.TILE_WIDTH)+1, math.floor(position.y/world.towerTileMap.TILE_HEIGHT)+1
-        if world.cheatMode then
-            world:placeTower({x=xTile,y=yTile}, true)
-        else
-            world:placeTower({x=xTile,y=yTile}, false)
+        local tile = world.positionToTile(position)
+        local tower = world.towerTileMap:get(tile).tower
+        if tower == nil then
+            world:placeTower(tile, world.cheatMode)
         end
+        world:selectTower(tile)
     end
 end

@@ -4,6 +4,10 @@ function Vectors.dist(a, b)
     return math.sqrt(math.pow(b.x-a.x,2) + math.pow(b.y-a.y,2))
 end
 
+function Vectors.length(a)
+    return Vectors.dist(a, {x=0, y=0})
+end
+
 function Vectors.norm(v)
     local length = math.sqrt(v.x*v.x+v.y*v.y)
     local nx, ny = v.x/length, v.y/length

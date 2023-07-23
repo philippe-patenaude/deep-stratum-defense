@@ -15,18 +15,23 @@ Instructions
 ============
 Left click in open areas to place a tower (it takes 25 ore).
 Place towers directly next to ore deposits to collect (top, bottom, left, or right; no diagonals).
-Each ore deposit contains 100 ore.
+Each ore deposit contains 250 ore.
 Towers can only be placed in areas that have been seen.
 Arrow keys to move the camera.
-Collect 500 excess ore to win the level.
-When a tower is destroyed, it leaves a foundation behind; those foundations can't be built over or removed (the tile is lost for construction).
+Collect 10,000 excess ore to win the level.
+When a tower is destroyed, it leaves a foundation behind; those foundations can't be built over but can be cleared to make the tile available again.
+Click on a tower to select it; you can then upgrade it's damage, range, or rate of fire with the 1, 2, and 3 number keys respectively.
+To sell a tower or clear a foundation, click on it and type "x".
+Tip: You get back all the resources for the tower and upgrades, so it's better to sell towers before they are destroyed. You can also move towers this way.
 
-The game does not currently have any progression, but the levels are procedurally generated (the first level will be the same every time, but subsequent levels will be different on each play through).
+The game does not currently have any progression, but the levels are procedurally generated.
 
 The tilde key (or back tick key) can be used to turn on cheat mode. Further instructions are provided in game.
 
 Change notes
 ============
+
+1.2.0: Added upgrades, can sell towers, can remove tower rubble, towers lead their shots, increased ore amount, increased goal amount, and randomized all levels.
 
 1.1.0: Added sounds, spider aliens, alien waves, updated UI, and made other improvements and bug fixes.
 
@@ -158,3 +163,6 @@ Changes: Cropped one of the sounds from the collection.
 
 ## Idea generation and text revision
 I used ChatGPT to generate ideas and to revise some of the text for the game.
+
+## Play testers
+Seth Pillsbury

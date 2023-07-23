@@ -21,6 +21,10 @@ function TileMap.set(t, width, height, types, world)
     end
 end
 
+function TileMap.get(t, position)
+    return t.tiles[position.y][position.x]
+end
+
 function TileMap.draw(t)
     
     local cameraTile = t.world.positionToTile(Resources.camera)
